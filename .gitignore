@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+
+# Data files (user-specific)
+.talent-tree.json
+.talent-analytics.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test
+test/
+*.test.js
+
+# Build
+dist/
+build/
+
+# Environment
+.env
+.env.local

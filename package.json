@@ -1,0 +1,40 @@
+{
+  "name": "talent-tree-skill",
+  "version": "1.0.0",
+  "description": "WoW-style talent system for AI agents - Progression, specializations, and combo abilities",
+  "main": "talent-manager.js",
+  "scripts": {
+    "show": "node -e \"const{handleCommand}=require('./commands');console.log(handleCommand('show'))\"",
+    "progress": "node -e \"const{handleCommand}=require('./commands');console.log(handleCommand('progress'))\"",
+    "help": "node -e \"const{handleCommand}=require('./commands');console.log(handleCommand('help'))\"",
+    "test": "node -e \"const{scan,displayStatus}=require('./security-scanner');scan().then(displayStatus)\""
+  },
+  "keywords": [
+    "talent",
+    "skill",
+    "rpg",
+    "gamification",
+    "agent",
+    "ai",
+    "openclaw",
+    "progression",
+    "xp",
+    "specialization"
+  ],
+  "author": "Gzeu",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Gzeu/talent-tree-skill"
+  },
+  "clawmarket": {
+    "name": "Talent Tree System",
+    "tagline": "World of Warcraft-style talent progression for AI agents",
+    "category": "gamification",
+    "tags": ["talent", "xp", "progression", "specialization", "gamification"],
+    "price": 0,
+    "currency": "USD",
+    "screenshots": [],
+    "demo": "node -e \"const{handleCommand}=require('./commands');console.log(handleCommand('show'))\""
+  }
+}

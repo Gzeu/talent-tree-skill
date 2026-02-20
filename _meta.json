@@ -1,0 +1,41 @@
+{
+  "name": "talent-tree",
+  "version": "1.0.0",
+  "description": "WoW-style talent system for AI agents - Gamify your agent with specializations, progression, and combos",
+  "author": "Aether",
+  "license": "MIT",
+  "keywords": ["talent", "skills", "gamification", "progression", "rpg", "agent", "openclaw"],
+  "category": "productivity",
+  "price": 0,
+  "pricing": {
+    "free": {
+      "price": 0,
+      "features": ["2 specializations", "6 talents", "basic XP", "local storage"]
+    },
+    "pro": {
+      "price": 9.99,
+      "features": ["4 specializations", "12 talents", "combos", "achievements", "analytics", "export/import"]
+    },
+    "enterprise": {
+      "price": 49.99,
+      "features": ["Everything in Pro", "custom branches", "priority support", "web dashboard API"]
+    }
+  },
+  "screenshots": [
+    "https://raw.githubusercontent.com/Gzeu/talent-tree-skill/main/screenshots/tree.png",
+    "https://raw.githubusercontent.com/Gzeu/talent-tree-skill/main/screenshots/progress.png"
+  ],
+  "demo": true,
+  "install": "npx clawhub install talent-tree",
+  "repository": "https://github.com/Gzeu/talent-tree-skill",
+  "homepage": "https://clawhub.com/skills/talent-tree",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "main": "talent-manager.js",
+  "scripts": {
+    "show": "node -e \"const{handleCommand}=require('./commands');console.log(handleCommand('show'))\"",
+    "progress": "node -e \"const{handleCommand}=require('./commands');console.log(handleCommand('progress'))\"",
+    "demo": "node demo.js"
+  }
+}
