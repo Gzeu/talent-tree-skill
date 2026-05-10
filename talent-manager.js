@@ -5,8 +5,10 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
-const TALENT_FILE = path.join('C:', 'Users', 'el', '.openclaw', 'workspace', '.talent-tree.json');
+const TALENT_FILE = process.env.TALENT_TREE_PATH ||
+  path.join(os.homedir(), '.openclaw', 'workspace', '.talent-tree.json');
 
 // Talent definitions
 const TREES = {
@@ -58,7 +60,7 @@ const SKILL_TO_BRANCH = {
   'agent-security': 'security',
   'threat': 'security',
   'audit': 'security',
-  
+
   // Development
   'git': 'development',
   'github': 'development',
@@ -69,7 +71,7 @@ const SKILL_TO_BRANCH = {
   'manim': 'development',
   'refactor': 'development',
   'code': 'development',
-  
+
   // Automation
   'cron': 'automation',
   'agent-orchestrator': 'automation',
@@ -80,7 +82,7 @@ const SKILL_TO_BRANCH = {
   'docker': 'automation',
   'workflow': 'automation',
   'auto': 'automation',
-  
+
   // Research
   'web_search': 'research',
   'web_fetch': 'research',
@@ -91,6 +93,8 @@ const SKILL_TO_BRANCH = {
   'research': 'research',
   'data': 'research'
 };
+
+const HISTORY_LIMIT = 200;
 
 function loadTalentData() {
   try {
@@ -105,6 +109,12 @@ function loadTalentData() {
 
 function saveTalentData(data) {
   data.last_activity = new Date().toISOString();
+  // Prune history to avoid unbounded file growth
+  if (data.history && data.history.length > HISTORY_LIMIT) {
+    data.history = data.history.slice(-HISTORY_LIMIT);
+  }
+  const dir = path.dirname(TALENT_FILE);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(TALENT_FILE, JSON.stringify(data, null, 2));
 }
 
@@ -112,21 +122,21 @@ function renderTree(data) {
   const reset = '\x1b[0m';
   const bold = '\x1b[1m';
   const dim = '\x1b[2m';
-  
+
   let output = `\n${bold} ╔══════════════════════════════════════════════════════════════╗ ${reset}\n`;
   output += `${bold} ║                🌳 TALENT TREE SYSTEM 🌳                      ║ ${reset}\n`;
   output += `${bold} ╠══════════════════════════════════════════════════════════════╣ ${reset}\n`;
   output += `${bold} ║${reset} Level: ${data.level}  |  XP: ${data.total_xp}  |  Points: ${data.points_available}  |  Spec: ${data.specialization || 'None'}\n`;
   output += `${bold} ╚══════════════════════════════════════════════════════════════╝ ${reset}\n\n`;
-  
+
   for (const [branch, info] of Object.entries(TREES)) {
     const isSpec = data.specialization === branch;
     const marker = isSpec ? '★' : ' ';
     const branchColor = info.color;
-    
+
     output += `${branchColor}${bold}  ${marker} ${info.emoji} ${branch.toUpperCase()}${reset}\n`;
     output += `  ${dim}├────────────────────────${reset}\n`;
-    
+
     for (const talent of info.talents) {
       const level = data.talents[branch][talent];
       const name = TALENT_NAMES[talent];
@@ -135,30 +145,33 @@ function renderTree(data) {
     }
     output += '\n';
   }
-  
+
   return output;
 }
 
 function addXP(amount, source = 'activity') {
+  if (typeof amount !== 'number' || isNaN(amount) || amount <= 0) {
+    return null;
+  }
   const data = loadTalentData();
   if (!data) return null;
-  
-  const oldPoints = Math.floor(data.total_xp / 100);
+
+  const oldPointsEarned = Math.floor(data.total_xp / 100);
   data.total_xp += amount;
-  const newPoints = Math.floor(data.total_xp / 100);
-  
-  if (newPoints > oldPoints) {
-    data.points_available += (newPoints - oldPoints);
+  const newPointsEarned = Math.floor(data.total_xp / 100);
+
+  if (newPointsEarned > oldPointsEarned) {
+    data.points_available += (newPointsEarned - oldPointsEarned);
     data.level = Math.floor(data.total_xp / 500) + 1;
   }
-  
+
   data.history.push({
     action: 'xp_gained',
     amount,
     source,
     timestamp: new Date().toISOString()
   });
-  
+
   saveTalentData(data);
   return data;
 }
@@ -166,11 +179,10 @@ function addXP(amount, source = 'activity') {
 function upgradeTalent(talentName) {
   const data = loadTalentData();
   if (!data) return { success: false, error: 'No talent data found' };
-  
-  // Find talent in branches
+
   let foundBranch = null;
   let foundTalent = null;
-  
+
   for (const [branch, talents] of Object.entries(data.talents)) {
     const normalized = talentName.toLowerCase().replace(/[\s-]/g, '_');
     if (talents[normalized] !== undefined) {
@@ -179,20 +191,20 @@ function upgradeTalent(talentName) {
       break;
     }
   }
-  
+
   if (!foundTalent) {
     return { success: false, error: `Talent "${talentName}" not found` };
   }
-  
+
   const currentLevel = data.talents[foundBranch][foundTalent];
   if (currentLevel >= 5) {
     return { success: false, error: 'Talent already at max level (5)' };
   }
-  
+
   if (data.points_available < 1) {
     return { success: false, error: 'No talent points available' };
   }
-  
+
   data.talents[foundBranch][foundTalent] = currentLevel + 1;
   data.points_available -= 1;
   data.history.push({
@@ -202,9 +214,9 @@ function upgradeTalent(talentName) {
     new_level: currentLevel + 1,
     timestamp: new Date().toISOString()
   });
-  
+
   saveTalentData(data);
-  
+
   return {
     success: true,
     talent: TALENT_NAMES[foundTalent],
@@ -216,28 +228,28 @@ function upgradeTalent(talentName) {
 function setSpecialization(branch) {
   const data = loadTalentData();
   if (!data) return { success: false, error: 'No talent data found' };
-  
+
   const normalized = branch.toLowerCase();
   if (!TREES[normalized]) {
     return { success: false, error: `Invalid branch: ${branch}. Valid: security, development, automation, research` };
   }
-  
+
   const oldSpec = data.specialization;
   data.specialization = normalized;
-  
+
   if (!data.achievements.includes('first_specialization')) {
     data.achievements.push('first_specialization');
   }
-  
+
   data.history.push({
     action: 'specialization_change',
     from: oldSpec,
     to: normalized,
     timestamp: new Date().toISOString()
   });
-  
+
   saveTalentData(data);
-  
+
   return {
     success: true,
     specialization: normalized,
@@ -249,29 +261,28 @@ function setSpecialization(branch) {
 function checkCombos(data) {
   const combos = [];
   const talents = data.talents;
-  
-  // Security L3 + Automation L3 -> Auto-Shield
+
   const secTotal = Object.values(talents.security).reduce((a, b) => a + b, 0);
   const autoTotal = Object.values(talents.automation).reduce((a, b) => a + b, 0);
   const devTotal = Object.values(talents.development).reduce((a, b) => a + b, 0);
   const resTotal = Object.values(talents.research).reduce((a, b) => a + b, 0);
-  
+
   if (secTotal >= 3 && autoTotal >= 3 && !data.combos_unlocked.includes('auto_shield')) {
     combos.push({ name: 'auto_shield', desc: '🛡️⚙️ Auto-Shield - Automatic threat response' });
   }
-  
+
   if (devTotal >= 5 && resTotal >= 3 && !data.combos_unlocked.includes('code_oracle')) {
     combos.push({ name: 'code_oracle', desc: '💻🔮 Code Oracle - Find optimal solutions' });
   }
-  
+
   if (autoTotal >= 5 && (secTotal >= 3 || devTotal >= 3 || resTotal >= 3) && !data.combos_unlocked.includes('megamind')) {
     combos.push({ name: 'megamind', desc: '🧠⚡ Megamind - Multi-agent orchestration' });
   }
-  
+
   if (secTotal >= 3 && devTotal >= 3 && autoTotal >= 3 && resTotal >= 3 && !data.combos_unlocked.includes('ascended')) {
     combos.push({ name: 'ascended', desc: '🌟 Ascended - Full agent potential unlocked!' });
   }
-  
+
   return combos;
 }
 
